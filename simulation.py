@@ -13,15 +13,24 @@ class HydraulicActuators:
     temperature = 30
     angle = 0
     fault = False
+    efficiency = 0.12
+
+    def refreshEfficiency(self, windMPH, altitudeFT):
+        self.efficiency = (0.10 - (windMPH * 0.00007)) - (altitudeFT * 0.000005)
+        if self.temperature < -20:
+            self.efficiency *= 0.8
+        
+        elif self.temperature > 80:
+            self.efficiency *= 0.9
     
     def extending(self, timePeriod):
+        print(self.efficiency)
         if self.fault == False:
-            efficiency = 0.1 #how much angle changes every ms, add wind temperature, damage
             temp = timePeriod
             for t in range (0,temp):
                 time.sleep(0.01)
                 timePeriod -= 1
-                self.angle += efficiency
+                self.angle += self.efficiency
                 if self.angle >= 90: #stop extending at 90 degrees
                     self.angle = 90
                     break
@@ -44,7 +53,8 @@ class LandingGearController:
             self.log("Gear Deploying")
             #time.sleep(1)
             HydraulicsAngle, timePeriod = HydraulicActuators.extending(Hydraulics, 1200)
-            #print (HydraulicsAngle)
+            print (HydraulicsAngle)
+            print (timePeriod)
             if HydraulicsAngle == 90:
                 self.state = GearState.DOWN_LOCKED
                 self.log("Gear Deployed")
@@ -64,6 +74,8 @@ class LandingGearController:
             self.log("Command Rejected, Invalid State")
 
 Hydraulics = HydraulicActuators
+Hydraulics.temperature = 30
+HydraulicActuators.refreshEfficiency(Hydraulics, 100, 3000)
 controller = LandingGearController()
 controller.command_gear_down()
 controller.command_gear_up()
