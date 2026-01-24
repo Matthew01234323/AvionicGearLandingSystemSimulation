@@ -1,12 +1,5 @@
-13:36:00 - INFO : Gear Deploying
-13:36:00 - INFO : time left:0ms
-13:36:00 - INFO : efficiency:46%
-13:36:00 - INFO : angle:55.2
-13:36:00 - WARNING : Insufficient Gear Deployment angle : under 90
-13:36:00 - INFO : Gear Retracting
-13:36:00 - INFO : time left:0ms
-13:36:00 - INFO : efficiency:46%
-13:36:00 - INFO : angle:0
-13:36:00 - INFO : Gear Retracted
-13:36:00 - WARNING : Command Rejected : Already Retracted
-13:36:00 - WARNING : Command Rejected : Already Retracted
+14:55:35 - INFO : Gear Deploying
+14:55:35 - INFO : Gear Deployed
+14:55:35 - INFO : Gear Retracting
+14:55:35 - INFO : Gear Retracted
+14:55:35 - WARNING : Command Rejected - Already Retracted

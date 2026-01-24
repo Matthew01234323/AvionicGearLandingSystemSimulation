@@ -11,7 +11,7 @@ logWrite.basicConfig(
     datefmt= "%H:%M:%S"
     )
 
-def hydraulicDebug(self, timePeriod):
+def hydraulicDebug(self, timePeriod):                                           # Provides Log feedback
     if debug == True:
         message = "time left:"+ str(timePeriod*10) + "ms"
         logWrite.info (message)
@@ -34,6 +34,24 @@ class GearState(Enum):
 
     STATIONARY_LOCKED = auto()
     STATIONARY = auto()
+
+class sensorState(Enum):
+    functional = auto()
+    faulty = auto()
+    broken = auto()
+
+class sensors:
+    condition = sensorState.functional
+
+    def read(self):
+        if self.condition == "functional":
+            angle = Hydraulics.angle
+        elif self.condition == "fault":
+            angle = Hydraulics.angle + (randint(-100, 100) / 10)
+        elif self.condition == "broken":
+            angle = 100
+
+        return angle
 
 class HydraulicActuators:
     temperature = 30
@@ -63,6 +81,8 @@ class HydraulicActuators:
                     break
             hydraulicDebug (self, timePeriod)
             return self.angle, timePeriod                   # returns the extended angle and time
+        else:
+            logWrite.warning("Hydraulic Fault Detected")
 
     def retracting(self, timePeriod):
         if self.fault == False:
@@ -75,47 +95,58 @@ class HydraulicActuators:
                     self.angle = 0
                     break
             hydraulicDebug (self, timePeriod)
-            return self.angle, timePeriod                   # returns the extended angle and time
+            return self.angle, timePeriod                           # returns the extended angle and time
+        else:
+            logWrite.warning("Hydraulic Fault Detected")                  
 
 class LandingGearController:
     def __init__(self):
         self.state = GearState.UP_LOCKED
 
     def command_gear_down(self):
-        if Hydraulics.angle < 90:                                    # Confirms the gear is in a valid position                     
-            self.state = GearState.TRANSITIONING_DOWN
-            logWrite.info("Gear Deploying")
-            HydraulicsAngle, timePeriod = HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
-            if HydraulicsAngle == 90:                               # If the gear does extend enough
-                self.state = GearState.DOWN_LOCKED
-                logWrite.info("Gear Deployed")
-            else:                                                   # If the gear does not extend enough
-                logWrite.warning("Insufficient Gear Deployment angle : under 90")
-                self.state = GearState.STATIONARY_LOCKED
+        if windSpeed < 250:
+            if Hydraulics.angle < 90:                                    # Confirms the gear is in a valid position                     
+                self.state = GearState.TRANSITIONING_DOWN
+                logWrite.info("Gear Deploying")
+                HydraulicsAngle, timePeriod = HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
+                if HydraulicsAngle == 90:                               # If the gear does extend enough
+                    self.state = GearState.DOWN_LOCKED
+                    logWrite.info("Gear Deployed")
+                else:                                                   # If the gear does not extend enough
+                    logWrite.warning("Insufficient Gear Deployment angle - under 90")
+                    self.state = GearState.STATIONARY_LOCKED
+            else:
+                logWrite.warning("Command Rejected - Already Deployed")
         else:
-            logWrite.warning("Command Rejected : Already Deployed")
+            logWrite.warning("Command Rejected - Dangerous windSpeed ")
         
     def command_gear_up(self):
-        if Hydraulics.angle > 0:                                    # Confirms the gear is in a valid position
-            self.state = GearState.TRANSITIONING_UP
-            logWrite.info("Gear Retracting")
-            HydraulicsAngle, timePeriod = HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
-            if HydraulicsAngle == 0:                                # If the gear is retracted enough
-                self.state = GearState.DOWN_LOCKED
-                logWrite.info("Gear Retracted")
-            else:                                                   # If the gear is not retracted enough
-                logWrite.warning("Insufficient Gear Retraction angle : above 0")
-                self.state = GearState.STATIONARY_LOCKED
+        if windSpeed < 250:
+            if Hydraulics.angle > 0:                                    # Confirms the gear is in a valid position
+                self.state = GearState.TRANSITIONING_UP
+                logWrite.info("Gear Retracting")
+                HydraulicsAngle, timePeriod = HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
+                if HydraulicsAngle == 0:                                # If the gear is retracted enough
+                    self.state = GearState.UP_LOCKED
+                    logWrite.info("Gear Retracted")
+                else:                                                   # If the gear is not retracted enough
+                    logWrite.warning("Insufficient Gear Retraction angle - above 0")
+                    self.state = GearState.STATIONARY_LOCKED
+            else:
+                logWrite.warning("Command Rejected - Already Retracted")
         else:
-            logWrite.warning("Command Rejected : Already Retracted")
+            logWrite.warning("Command Rejected - Dangerous windSpeed ")
 
-debug = True                                                        # Sets the debug of the script t/f
-timeControls = False
-Hydraulics = HydraulicActuators                                     # Creates an object of the class Hydraulics
-Hydraulics.temperature = 40 
+
+Hydraulics = HydraulicActuators()                                  # Creates an object of the class Hydraulics
+Hydraulics.temperature = 37
 Hydraulics.fault = False
 windSpeed = 200
-altitude = 8000
+altitude = 1500
+
+debug = False                                                        # Sets the debug of the script t/f
+timeControls = False                                                 # Sets the real time simulation t/f
+
 HydraulicActuators.refreshEfficiency(Hydraulics, windSpeed, altitude)           # Calculates the hydraulic efficiency
 
 controller = LandingGearController()
