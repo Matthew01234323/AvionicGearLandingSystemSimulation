@@ -1,11 +1,25 @@
 from enum import Enum, auto
 from random import randint
 import time
+import logging as logWrite
 
-def hydraulicDebug(self, timePeriod, debug):
+logWrite.basicConfig(
+    filename = "simulationLog",
+    filemode = "a",
+    level = logWrite.INFO,
+    format = "%(asctime)s - %(levelname)s : %(message)s",
+    datefmt= "%H:%M:%S"
+    )
+
+def hydraulicDebug(self, timePeriod):
     if debug == True:
         print ("time left:", timePeriod)
         print ("efficiency:", self.efficiency)
+
+def timePause (delay):
+    if timeControls == True:
+        time.sleep(0.01)
+
 
 class GearState(Enum):
     UP_LOCKED = auto()
@@ -34,69 +48,61 @@ class HydraulicActuators:
     def extending(self, timePeriod):
         if self.fault == False:
             temp = timePeriod
-            for t in range (0,temp):
-                time.sleep(0.01)                            # causes a real time simulation delay
+            for t in range (0,temp):   
+                timePause(0.01)                         # causes a real time simulation delay
                 timePeriod -= 1
                 self.angle += self.efficiency
                 if self.angle >= 90:                        # stops extending at 90 degrees
                     self.angle = 90
                     break
-            hydraulicDebug (self, timePeriod, debug)
+            hydraulicDebug (self, timePeriod)
             return self.angle, timePeriod                   # returns the extended angle and time
-        
-        else:
-            self.log("Command Rejected")
 
     def retracting(self, timePeriod):
         if self.fault == False:
             temp = timePeriod
             for t in range (0,temp):
-                time.sleep(0.01)                            # causes a real time simulation delay
+                timePause (0.01)                            # causes a real time simulation delay
                 timePeriod -= 1
                 self.angle -= self.efficiency
                 if self.angle <= 0:                        # stops extending at 90 degrees
                     self.angle = 0
                     break
-            hydraulicDebug (self, timePeriod, debug)
+            hydraulicDebug (self, timePeriod)
             return self.angle, timePeriod                   # returns the extended angle and time
-        
-        else:
-            self.log("Command Rejected")
 
 class LandingGearController:
     def __init__(self):
         self.state = GearState.UP_LOCKED
 
-    def log(self, message):
-        print(f"[{self.state.name}] {message}")
-
     def command_gear_down(self):
         if self.state == GearState.UP_LOCKED:                       # Confirms the gear is in a valid state
             self.state = GearState.TRANSITIONING_DOWN
-            self.log("Gear Deploying")
+            logWrite.info("Gear Deploying")
             HydraulicsAngle, timePeriod = HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
             if HydraulicsAngle == 90:                               # If the gear does extend enough
                 self.state = GearState.DOWN_LOCKED
-                self.log("Gear Deployed")
+                logWrite.info("Gear Deployed")
             else:                                                   # If the gear does not extend enough
-                self.log("Insufficient Gear Deployment angle")
+                logWrite.warning("Insufficient Gear Deployment angle")
         else:
-            self.log("Command Rejected")
+            logWrite.warning("Command Rejected")
         
     def command_gear_up(self):
         if self.state == GearState.DOWN_LOCKED:                     # Confirms the gear is in a valid state
             self.state = GearState.TRANSITIONING_UP
-            self.log("Gear Retracting")
+            logWrite.info("Gear Retracting")
             HydraulicsAngle, timePeriod = HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
             if HydraulicsAngle == 0:                                # If the gear is retracted enough
                 self.state = GearState.DOWN_LOCKED
-                self.log("Gear Retracted")
+                logWrite.info("Gear Retracted")
             else:                                                   # If the gear is not retracted enough
-                self.log("Insufficient Gear Retraction angle")
+                logWrite.warning("Insufficient Gear Retraction angle")
         else:
-            self.log("Command Rejected")
+            logWrite.warning("Command Rejected")
 
-debug = True                                                        # Sets the debug of the script t/f
+debug = False                                                        # Sets the debug of the script t/f
+timeControls = False
 Hydraulics = HydraulicActuators                                     # Creates an object of the class Hydraulics
 Hydraulics.temperature = 30 
 HydraulicActuators.refreshEfficiency(Hydraulics, 80, 500)           # Calculates the hydraulic efficiency
