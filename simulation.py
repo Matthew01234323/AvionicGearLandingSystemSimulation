@@ -44,12 +44,12 @@ class sensors:
     condition = sensorState.functional
 
     def read(self):
-        if self.condition == "functional":
+        if self.condition == sensorState.functional:
             angle = Hydraulics.angle
-        elif self.condition == "fault":
+        elif self.condition == sensorState.faulty:
             angle = Hydraulics.angle + (randint(-100, 100) / 10)
-        elif self.condition == "broken":
-            angle = 100
+        elif self.condition == sensorState.broken:
+            angle = -1
 
         return angle
 
@@ -105,44 +105,75 @@ class LandingGearController:
 
     def command_gear_down(self):
         if windSpeed < 250:
-            if Hydraulics.angle < 90:                                    # Confirms the gear is in a valid position                     
-                self.state = GearState.TRANSITIONING_DOWN
-                logWrite.info("Gear Deploying")
-                HydraulicsAngle, timePeriod = HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
-                if HydraulicsAngle == 90:                               # If the gear does extend enough
-                    self.state = GearState.DOWN_LOCKED
-                    logWrite.info("Gear Deployed")
-                else:                                                   # If the gear does not extend enough
-                    logWrite.warning("Insufficient Gear Deployment angle - under 90")
-                    self.state = GearState.STATIONARY_LOCKED
+            sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
+            if sensorReading != -1:
+                if sensorReading < 90:                                  # Confirms the gear is in a valid position                     
+                    self.state = GearState.TRANSITIONING_DOWN
+                    logWrite.info("Gear Deploying")
+                    HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
+                    sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
+                    if sensorReading == 90:                               # If the gear does extend enough
+                        self.state = GearState.DOWN_LOCKED
+                        logWrite.info("Gear Deployed")
+                    else:                                                   # If the gear does not extend enough
+                        logWrite.warning("Insufficient Gear Deployment angle - under 90")
+                        self.state = GearState.STATIONARY_LOCKED
+                else:
+                    logWrite.warning("Command Rejected - Already Deployed")
             else:
-                logWrite.warning("Command Rejected - Already Deployed")
+                logWrite.critical("Two Or More Sensors Have Fault - Unable To Verify Gear Poistion")
         else:
             logWrite.warning("Command Rejected - Dangerous windSpeed ")
         
     def command_gear_up(self):
         if windSpeed < 250:
-            if Hydraulics.angle > 0:                                    # Confirms the gear is in a valid position
-                self.state = GearState.TRANSITIONING_UP
-                logWrite.info("Gear Retracting")
-                HydraulicsAngle, timePeriod = HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
-                if HydraulicsAngle == 0:                                # If the gear is retracted enough
-                    self.state = GearState.UP_LOCKED
-                    logWrite.info("Gear Retracted")
-                else:                                                   # If the gear is not retracted enough
-                    logWrite.warning("Insufficient Gear Retraction angle - above 0")
-                    self.state = GearState.STATIONARY_LOCKED
+            sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
+            if sensorReading > -1: 
+                if sensorReading > 0:        # Confirms the gear is in a valid position
+                    self.state = GearState.TRANSITIONING_UP
+                    logWrite.info("Gear Retracting")
+                    HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
+                    sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
+                    if sensorReading == 0:                                # If the gear is retracted enough
+                        self.state = GearState.UP_LOCKED
+                        logWrite.info("Gear Retracted")
+                    else:                                                   # If the gear is not retracted enough
+                        logWrite.warning("Insufficient Gear Retraction angle - above 0")
+                        self.state = GearState.STATIONARY_LOCKED
+                else:
+                    logWrite.warning("Command Rejected - Already Retracted")
             else:
-                logWrite.warning("Command Rejected - Already Retracted")
+                logWrite.critical("Two Or More Sensors Have Fault - Unable To Verify Gear Poistion")
         else:
             logWrite.warning("Command Rejected - Dangerous windSpeed ")
 
+def sensorDataView (s1, s2, s3):
+    if s1 == s2 and s2 == s3:
+        return s1
+    else:
+        if s1 == s2:
+            return s1
+        if s1 == s3:
+            return s1
+        if s2 == s3:
+            return s2
+        
+        return -1
+        
+sensor1 = sensors()
+sensor2 = sensors()
+sensor3 = sensors()
+
+#sensor1.condition = sensorState.faulty
+#sensor2.condition = sensorState.faulty
 
 Hydraulics = HydraulicActuators()                                  # Creates an object of the class Hydraulics
 Hydraulics.temperature = 37
 Hydraulics.fault = False
 windSpeed = 200
 altitude = 1500
+
+#print (sensorDataView (sensor1.read(), sensor2.read(), sensor3.read()))
 
 debug = False                                                        # Sets the debug of the script t/f
 timeControls = False                                                 # Sets the real time simulation t/f
