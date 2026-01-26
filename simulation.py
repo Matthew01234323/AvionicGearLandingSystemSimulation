@@ -141,7 +141,7 @@ class LandingGearController:
                     logWrite.info("Deploying")
                     HydraulicActuators.extending(Hydraulics, 1200) # Calls the hydraulics to move
                     sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
-                    if sensorReading == 90:                               # If the gear does extend enough
+                    if sensorReading > 81:                               # If the gear does extend enough
                         self.state = GearState.DOWN_LOCKED
                         logWrite.info("Gear Deployed")
                     elif sensorReading == -1:
@@ -166,7 +166,7 @@ class LandingGearController:
                     logWrite.info("Retracting")
                     HydraulicActuators.retracting(Hydraulics, 1200) # Calls the hydraulics to move
                     sensorReading = sensorDataView (sensor1.read(), sensor2.read(), sensor3.read())
-                    if sensorReading == 0:                                # If the gear is retracted enough
+                    if sensorReading < 6:                                # If the gear is retracted enough
                         self.state = GearState.UP_LOCKED
                         logWrite.info("Gear Retracted")
                     elif sensorReading == -1:
@@ -200,12 +200,12 @@ def sensorDataView (s1, s2, s3):
 Hydraulics = HydraulicActuators()
 
 #Set runtime parameters
-debug = False                                                       
-timeControls = False  
+debug = True                                                       
+timeControls = True  
 randomFaultsHydraulics = 100 # The chance of developing a fault - 0 is off, 1-10000 - Max is gaurenteed 
 randomFaultSensors = 10  # The chance of developing a fault - 0 is off, 1-1000 - Max is gaurenteed 
 
-Hydraulics.temperature = 37
+Hydraulics.temperature = 37.5
 windSpeed = 200
 altitude = 1500
 

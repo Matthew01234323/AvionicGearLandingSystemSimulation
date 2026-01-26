@@ -1,5 +1,11 @@
-17:08:34 - INFO : Deploying
-17:08:34 - INFO : Gear Deployed
-17:08:34 - INFO : Retracting
-17:08:34 - INFO : Gear Retracted
-17:08:34 - WARNING : Command Rejected - Already Retracted
+17:34:08 - INFO : Deploying
+17:34:21 - INFO : time left:530ms
+17:34:21 - INFO : efficiency:78%
+17:34:21 - INFO : angle:90
+17:34:21 - INFO : Gear Deployed
+17:34:21 - INFO : Retracting
+17:34:33 - INFO : time left:530ms
+17:34:33 - INFO : efficiency:78%
+17:34:33 - INFO : angle:0
+17:34:33 - INFO : Gear Retracted
+17:34:33 - WARNING : Command Rejected - Already Retracted
